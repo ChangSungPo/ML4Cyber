@@ -1,0 +1,81 @@
+# Malware Classification with PE File Analysis
+
+
+##  Project Overview
+This project aims to classify malware into one of 9 distinct families (e.g., Ramnit, Vundo, Simda) using static analysis of Portable Executable (PE) files. By analyzing `.asm` (assembly) and `.bytes` files, we are building a machine learning pipeline to detect behavioral fingerprints and structural anomalies across different malware classes.
+
+##  Progress & Milestones
+
+* **Data Engineering & Storage Optimization:** * Mitigated a 500 GB storage bottleneck from the original Kaggle dataset by implementing **Stratified Sampling**. 
+  * Extracted a highly representative 10% subset (1,089 files), ensuring minority classes like Simda (Class 5) are preserved.
+* **Feature Extraction:** * Built a custom, memory-efficient parser using `latin-1` encoding to extract frequencies for 14 primary x86 opcodes (e.g., `mov`, `push`, `jmp`, `xor`). 
+  * Successfully transformed unstructured `.asm` files into a clean numerical feature matrix (`asm_features.csv`).
+* **Baseline Model:** * Trained an initial Random Forest Classifier (with balanced class weights) on the opcode matrix.
+  * **Current Baseline Accuracy:** 92.20%
+
+## Repository Structure
+\`\`\`text
+malware-classification/
+├── data/
+│   ├── asm_features.csv         # Extracted opcode feature matrix
+│   ├── metadata_features.csv    # Combined opcode and file size features
+│   └── subset_train_list.csv    # Target labels for the 10% stratified sample
+├── src/
+│   ├── extract_asm.py           # Script to parse .asm files and count opcodes
+│   ├── extract_metadata.py      # Script to calculate .asm and .bytes file sizes
+│   ├── visualize_results.py     # EDA script for confusion matrices and F1-score comparisons
+│   ├── train_baseline.py        # 14-Opcode Random Forest training script
+│   ├── train_metadata_rf.py     # Metadata-enhanced Random Forest (94.04% model)
+│   └── train_advanced_models.py # Final RF and XGBoost training (99% accuracy)
+├── reports/
+│   └── figures/                 # Output for EDA, confusion matrices, and robustness plots
+├── README.md
+├── requirements.txt
+└── .gitignore                  # Ignores raw Kaggle downloads and .7z archives
+\`\`\`
+*(Note: The `data/raw_sample/` folder is ignored via `.gitignore` to prevent uploading massive binaries to the repository).*
+
+## Quickstart / Setup
+
+**1. Clone the repository**
+git clone https://github.com/YOUR-USERNAME/YOUR-REPO-NAME.git
+cd YOUR-REPO-NAME
+
+
+**2. Install Dependencies**
+Ensure you have Python 3 installed, then run:
+pip install -r requirements.txt
+
+
+**3. Run the Baseline Pipeline**
+To regenerate the feature matrix (requires local `.asm` files in `data/raw_sample/`):
+
+python3 src/extract_asm.py
+
+
+To train the baseline model and view the accuracy and classification report:
+
+python3 src/train_baseline.py
+
+
+To generate exploratory data analysis (EDA) plots:
+
+python3 src/visualize_opcodes.py
+python3 src/train_metadata_rf.py
+python3 src/train_advanced_models.py
+
+##  Next Steps
+While the overall accuracy is strong, F1-scores for specific classes (Classes 4 and 6) indicate confusion between families with similar instruction profiles. To cut through obfuscation and improve classification boundaries, the team will focus on:
+1. **N-gram Analysis:** Moving beyond simple counts to capture sequences of 2 or 3 opcodes.
+2. **File Entropy & Metadata:** Adding `.bytes` and `.asm` file sizes to detect packed or encrypted payloads.
+3. **Advanced Modeling:** Transitioning from Random Forest to XGBoost to better handle class imbalances.
+
+Model Evolution:
+Baseline Model: Initial Random Forest achieved 92.20% accuracy but struggled with confusion between Class 4 and Class 6.
+Metadata-Enhanced Model: Resolved the "obfuscation blindspot" by adding structural metadata, increasing accuracy to 94.04% and significantly improving F1-scores for Class 4 and Class 7.
+Final Ensemble Models: Scaled to the full dataset using Random Forest and XGBoost, achieving a final accuracy of 99%.
+
+Final Findings & Analysis
+Metadata Utility: Physical file size ratios are high-value diagnostics for identifying packed or encrypted malware that code-only analysis might miss.
+Model Robustness: While KNN achieved a 93% clean accuracy, its performance plummeted to 65% under noise; conversely, Random Forest maintained 98.7% accuracy during robustness testing.
+Class Imbalance: Ensemble models with built-in class weight balancing were mandatory for correctly identifying rare families like Class 4, which were consistently misclassified by simpler proximity-based models.
